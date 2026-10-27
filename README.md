@@ -1,174 +1,171 @@
-# Free open source Quiz App (Flask and MySQL)
+# ⚡ Online GK Quiz Generator & Arena
+### Production-Ready Flask + MySQL Application with AWS Cloud Integration
 
-The Quiz App is an open-source web application built with Python and Flask that allows users to take quizzes and assess your knowledge. It's designed to be easy to use, customizable, and can be adapted for various educational or assessment purposes.
+An enterprise-grade, gamified **General Knowledge (GK) Online Quiz Generator** built with **Python Flask**, **MySQL**, and modern **Vanilla HTML/CSS/JavaScript**. Architected to run seamlessly either **100% locally** (with graceful fallbacks) or on **Amazon Web Services (AWS)** using Amazon EC2, Amazon RDS, Amazon S3, Amazon SNS, and Amazon CloudWatch.
 
-![Screenshot 1](screenshot/Screen_001.png?raw=true "Screenshot 1")
-![Screenshot 2](screenshot/Screen_002.png?raw=true "Screenshot 2")
+---
 
-## Introduction
+## 🚀 Key Features
 
-The Quiz App provides a user-friendly interface for creating and taking quizzes. Whether you're an educator looking to create quizzes for your students or an enthusiast wanting to test your knowledge, this app is designed to meet your needs. It offers features like random question selection, user response recording, and real-time scoring.
+### 🎮 Gamified Quiz Arena
+- **Dynamic Quiz Generator:** Pick from 8 distinct GK categories (*History, Geography, Science, Sports, Politics, Current Affairs, Entertainment, Technology*), select difficulty (*Easy, Medium, Hard, All*), and length (*5, 10, 15, 20 questions*).
+- **Life System (3 Hearts):** Players start with 3 lives. Wrong answers or 30-second timeouts cost a heart.
+- **Interactive Lifelines:**
+  - `50:50` eliminates two incorrect choices.
+  - `Text Hint` delivers a curated historical/scientific clue.
+  - `Skip Question` bypasses a difficult prompt once per attempt.
+- **Dynamic Streak Multipliers:** Consecutive correct answers build fire streaks with bonus points.
+- **Synthesized Web Audio FX:** Custom chimes, ticking clocks, buzzing alerts, game over notes, and victory fanfare powered entirely via the Web Audio API without heavy external audio files.
+- **Dual Visual Themes:** Seamless Dark Mode and Light Mode switching with persistent preference storage.
 
-## Database Structure
+### 🏆 Leaderboards & User Profiles
+- **Hall of Fame:** Category-filtered top-10 leaderboard ranking players by total score, accuracy, and speed.
+- **Player History:** Detailed audit trail of past quiz attempts with score analytics.
+- **Direct Exports:** Instant CSV data export and print-ready PDF certificate generation.
 
-The Quiz App uses a MySQL database and json files to store questions, quiz logs, and session information. Below are the descriptions of the fields in the main files and tables:
+### 🛡️ Admin Management
+- **Full Question CRUD:** Search, filter, add, edit, and delete questions with real-time category counter updates.
+- **S3 Illustration Upload:** Upload question images directly to Amazon S3 (or local storage fallback).
 
-### Questions Table (file `questions.json`)
+---
 
-- `question_id` (Primary Key): Unique identifier for each question.
-- `question`: The actual quiz question.
-- `correct_answers`: Comma-separated list of correct answers.
-- `choices`: Comma-separated list of answer choices.
+## ☁️ AWS Cloud Architecture & Local Fallbacks
 
-![Screenshot 5](screenshot/Screen_005.png?raw=true "Screenshot 5")
+The application is controlled by a single environment toggle: `USE_AWS=true` or `USE_AWS=false`.
 
-### Parameter Table (file `quiz_parameters.json`)
+| Component | In AWS Cloud Mode (`USE_AWS=true`) | In Local Fallback Mode (`USE_AWS=false`) |
+| :--- | :--- | :--- |
+| **Database** | **Amazon RDS MySQL** (Multi-AZ / Single-AZ) | **Local MySQL Instance** |
+| **File Storage** | **Amazon S3** (`s3://bucket/results/<user_id>/...`) | **Local Directory** (`uploads/results/...`) |
+| **Download Links** | **15-Minute S3 Pre-Signed URLs** | **Local Web Server File Routes** |
+| **Notifications** | **Amazon SNS** (Email alerts on quiz completion) | **Console Logger Mock Emitter** |
+| **Observability** | **Amazon CloudWatch Logs** (`watchtower`) | **Standard Stream & Rotating Logger** |
+| **Credentials** | **EC2 IAM Role** (Zero hardcoded secrets) | **Local `.env` File** |
 
-- `num_questions`: Number of question of each takes.
-- `passing_level`: The actual passing level.
-- `quiz_title`: The title of the quiz, it will be printed on the top of the quiz page.
+### Live AWS Diagnostic Dashboard
+Navigate to `/aws-status` in your browser for a real-time health indicator checking RDS latency, S3 bucket access, SNS topic status, and CloudWatch stream connectivity.
 
-![Screenshot 6](screenshot/Screen_006.png?raw=true "Screenshot 6")
+---
 
-### Quiz Log Table
+## 🛠️ Tech Stack
 
-- `log_id` (Primary Key): Unique identifier for each quiz log entry.
-- `session_id` (Foreign Key): Links the log entry to a specific quiz session.
-- `question_number`: The order of the question in the quiz session.
-- `question_id`: The ID of the question from the Questions table.
-- `question`: The text of the question.
-- `user_answers`: User's selected answers, separated by a pipe (|).
-- `correct_answers`: Correct answers for the question, separated by a pipe (|).
-- `is_correct`: Indicates whether the user's answers were correct (1 for correct, 0 for incorrect).
-- `first_modified_time`: Timestamp of the first modification to the question.
-- `last_modified_time`: Timestamp of the last modification to the question.
+- **Backend:** Python 3.10+, Flask, Gunicorn
+- **Database Driver:** PyMySQL, Cryptography
+- **AWS SDK:** `boto3`, `watchtower`
+- **Frontend:** HTML5, Modern CSS3 (CSS Variables, Flexbox, CSS Grid), Vanilla ES6 JavaScript
+- **Styling & UI:** Bootstrap 5.3, Font Awesome 6.4, Inter & Outfit Google Fonts
+- **Audio:** Web Audio API (native browser synthesizer)
 
-![Screenshot 4](screenshot/Screen_004.png?raw=true "Screenshot 4")
+---
 
-### Session Info Table
+## 💻 Local Quickstart
 
-- `session_id` (Primary Key): Unique identifier for each quiz session.
-- `page_load_time`: Timestamp when the user loaded the quiz page.
-- `submission_time`: Timestamp when the user submitted the quiz.
-- `num_questions`: Number of questions in the quiz session.
-- `passing_level`: The passing score required to pass the quiz.
-
-![Screenshot 3](screenshot/Screen_003.png?raw=true "Screenshot 3")
-
-## Python Module Dependencies
-
-To run the Quiz App, you need the following Python modules and dependencies:
-
-- **Flask:** A web framework for Python.
-- **pymysql:** A Python library for connecting to MySQL databases.
-- **Jinja2:** for rendering HTML templates.
-- **Bootstrap:** for styling.
-
-You can install these dependencies via pip using the following command:
+### 1. Clone & Set Up Virtual Environment
 
 ```bash
-pip install Flask pymysql
+git clone https://github.com/simboli/quiz-flask-app.git
+cd quiz-flask-app
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+# Linux / macOS:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-## Getting Started
+### 2. Configure Environment Variables
 
-To get started with the Quiz App, follow these steps:
+Copy the example `.env` file:
+```bash
+cp .env.example .env
+```
 
-1. Clone this repository to your local machine.
+Edit `.env` for your local MySQL database:
+```env
+USE_AWS=false
+AWS_REGION=us-east-1
 
-   ```bash
-   git clone https://github.com/simboli/quiz-flask-app.git
-   ```
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=quiz-app
 
-2. Create a virtual environment and install the required dependencies.
+SECRET_KEY=supersecretkey-local-development
+```
 
-   ```bash
-   cd quiz-app
-   python -m venv Quizvenv
-   source Quizvenv/bin/activate  # On Windows, use `venv\Scripts\activate`
-   pip install -r requirements.txt
-   ```
+### 3. Provision Database & Seed 64 Questions
 
-3. Configure the MySQL database settings in `app.py`:
+Run the automated provisioning script to create the schema and populate all 64 questions:
+```bash
+python setup_db.py
+```
+*(Or use `python setup_rds.py` when pointing to a remote Amazon RDS instance)*
 
-   ```python
-   app.config['MYSQL_HOST'] = 'localhost'
-   app.config['MYSQL_USER'] = 'your_username'
-   app.config['MYSQL_PASSWORD'] = 'your_password'
-   app.config['MYSQL_DB'] = 'quiz-app'
-   ```
+Default seeded credentials:
+- **Admin:** `admin` / `admin123`
+- **Player:** `player1` / `player123`
 
-4. Import the database schema using the provided SQL script in `database.sql`.
+### 4. Run the Application
 
-   ```bash
-   mysql -u your_username -p quiz-app < database.sql
-   ```
+```bash
+python app.py
+```
+Open **`http://127.0.0.1:5000`** in your browser.
 
-5. Run the Flask application.
+---
 
-   ```bash
-   python app.py
-   ```
+## 📖 AWS Deployment Guide
 
-6. Access the Quiz App in your web browser at `http://localhost:5000`.
+For full step-by-step instructions on provisioning:
+- **EC2 Ubuntu 22.04 LTS**
+- **RDS MySQL Database with VPC Security Groups**
+- **S3 Bucket & SNS Topics**
+- **IAM Instance Profile JSON Policies**
+- **Gunicorn Systemd Unit (`quizgen.service`)**
+- **Nginx Reverse Proxy & Let's Encrypt SSL**
 
-## Customization
+👉 **Read the comprehensive [DEPLOY_AWS.md](DEPLOY_AWS.md) guide.**
 
-You can customize the Quiz App by:
+---
 
-- Adding or modifying questions in the `questions.json` file.
-- Adjusting the passing level and number of questions in `quiz_parameters.json`.
-- Modifying the HTML templates in the `templates` directory.
-- Styling the application by editing the `style.css` file.
+## 🔌 API Endpoints Reference
 
-## Contributing
+### Public & Game Engine APIs
+- `GET /health` - Health check and environment mode status
+- `GET /aws-status` - AWS service connectivity dashboard
+- `GET /api/aws/status` - JSON diagnostic check of RDS, S3, SNS, CloudWatch
+- `GET /api/categories` - Available categories and question counts
+- `POST /api/quiz/start` - Initialize customized quiz attempt
+- `GET /api/quiz/<attempt_id>/current` - Retrieve current question
+- `POST /api/quiz/<attempt_id>/hint` - Request 50:50 or text hint
+- `POST /api/quiz/<attempt_id>/skip` - Skip current question
+- `POST /api/quiz/<attempt_id>/answer` - Submit answer and receive instant feedback
+- `GET /api/quiz/<attempt_id>/result` - Retrieve quiz summary, question review, and S3 pre-signed download URLs
+- `GET /api/leaderboard?category=<cat>` - Top 10 leaderboard rankings
 
-Contributions to the Quiz App are welcome! If you'd like to add new features, fix bugs, or improve the documentation, please follow these steps:
+### Authentication & User APIs
+- `POST /api/auth/register` - Create user account
+- `POST /api/auth/login` - User sign-in
+- `POST /api/auth/logout` - User sign-out
+- `GET /api/auth/me` - Current session profile
+- `GET /api/user/history` - User quiz attempt history & statistics
+- `POST /api/user/subscribe-sns` - Subscribe email to Amazon SNS score alerts
 
-1. Fork the repository.
-2. Create a new branch for your changes.
+### Admin Question APIs (Protected)
+- `GET /api/admin/questions` - Search and filter question bank
+- `POST /api/admin/questions` - Add new question
+- `PUT /api/admin/questions/<id>` - Update existing question
+- `DELETE /api/admin/questions/<id>` - Delete question
+- `POST /api/admin/questions/upload-image` - Upload question illustration to S3
 
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+---
 
-3. Commit your changes and push them to your fork.
-
-   ```bash
-   git commit -m "Add your feature"
-   git push origin feature/your-feature-name
-   ```
-
-4. Create a pull request on the main repository.
-
-## Future Improvements
-
-Here are some enhancements and features that can be added to the Flask Quiz App in the nearly future:
-
-1. **Enhanced Styling:** Improve the overall style and visual design of the application for a more appealing user interface.
-
-2. **Better Accessibility:** Ensure that the application is accessible to users with disabilities, following accessibility standards.
-
-3. **Enhanced Responsive Experience:** Make the app more mobile-friendly and responsive for a seamless experience on smartphones and tablets.
-
-4. **Support for Code and Graphics:** Allow quiz creators to include code snippets and images in questions and answer choices.
-
-5. **User Authentication:** Implement user authentication and user account management for personalized quiz creation and tracking.
-
-6. **Leaderboards:** Add a leaderboard feature to display high scores and rankings for quizzes.
-
-7. **Timer for Quizzes:** Introduce a timer option for quizzes, adding a time constraint for each question.
-
-8. **Export Quiz Results:** Enable users to export their quiz results in various formats, such as PDF or CSV.
-
-9. **Multi-Language Support:** Support multiple languages to make the app accessible to a global audience.
-
-10. **User Feedback:** Collect user feedback and suggestions for continuous improvement.
-
-11. **Multi database connections:** the possibility to use it with databases like SQLite, PostgreSQL, ...
-
-We welcome contributions from the open-source community to help implement these enhancements and make the Flask Quiz App even better!
-
-## License
-
+## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -1,95 +1,722 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en" data-theme="dark">
 <head>
-    <title>{{ quiz_title }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='css/style.css') }}">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online GK Quiz Generator</title>
+    <!-- Modern Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5.3 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ range(1000, 9999) | random }}">
 </head>
-
 <body>
-    <div class="container-fluid">
-        <h1 class="mt-5" aria-label="Quiz Results">{{ quiz_title }}</h1>
-        <div class="result-summary">
-            <h2 aria-label="Number-questions">
-                This test has {{ num_questions }} {{ 'question' if num_questions == 1 else 'questions' }}
-            </h2>
-        </div>
-        <h3 aria-label="Questions">Questions:</h3>
 
-        <form method="POST" action="/submit">
-            {% for question in questions %}
-            <ul class="list-group mt-3">
-                <li class="list-group-item question-item">
-                    <p class="question-text">{{ question['question'] }}</p>
-                    <div class="question" id="{{ question['question_id'] }}">
-                        <input type="hidden" name="first_modified_{{ question['question_id'] }}"
-                            id="first_modified_{{ question['question_id'] }}" value="{{ current_timestamp }}">
-                        <input type="hidden" name="last_modified_{{ question['question_id'] }}"
-                            id="last_modified_{{ question['question_id'] }}" value="{{ current_timestamp }}">
-                        <ul class="answer-list">
-                            {% for choice in question['choices'] %}
-                            <li class="list-group-item">
-                                <input type="checkbox" class="form-check-input" name="{{ question['question'] }}"
-                                    value="{{ choice }}" id="{{ question['question_id'] }}_{{ choice }}"
-                                    style="display: none;">
-                                <label class="answer-text" for="{{ question['question_id'] }}_{{ choice }}">{{ choice
-                                    }}</label>
-                                </input>
-                            </li>
-                            {% endfor %}
-                        </ul>
+    <!-- -------------------------------------------------------------
+         Header & Navigation
+    -------------------------------------------------------------- -->
+    <nav class="navbar navbar-expand-lg custom-navbar">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#generator" onclick="App.showView('generator')">
+                <i class="fa-solid fa-brain-circuit text-primary fs-3"></i>
+                <span class="brand-logo-gradient">QuizGen.io</span>
+            </a>
+
+            <button class="navbar-toggler border-0 shadow-none text-light" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <i class="fa-solid fa-bars fs-4"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 gap-1">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="nav-generator" href="#generator" onclick="App.showView('generator')">
+                            <i class="fa-solid fa-gamepad me-1"></i> Quiz
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="nav-leaderboard" href="#leaderboard" onclick="App.showView('leaderboard')">
+                            <i class="fa-solid fa-trophy me-1"></i> Leaderboard
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-profile-item">
+                        <a class="nav-link" id="nav-profile" href="#profile" onclick="App.showView('profile')">
+                            <i class="fa-solid fa-chart-pie me-1"></i> My Stats
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-admin-item" style="display: none;">
+                        <a class="nav-link text-warning fw-semibold" id="nav-admin" href="#admin" onclick="App.showView('admin')">
+                            <i class="fa-solid fa-shield-halved me-1"></i> Admin
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-info fw-semibold" href="/aws-status" target="_blank" title="AWS RDS, S3, SNS & CloudWatch Live Health">
+                            <i class="fa-brands fa-aws me-1"></i> AWS Status
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Right Nav Controls (Sound, Theme, Auth) -->
+                <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
+                    <button class="btn-icon" id="sound-toggle-btn" title="Toggle Sound FX" onclick="App.toggleSound()">
+                        <i class="fa-solid fa-volume-high text-info"></i>
+                    </button>
+                    <button class="btn-icon" id="theme-toggle-btn" title="Toggle Dark/Light Mode" onclick="App.toggleTheme()">
+                        <i class="fa-solid fa-sun text-warning"></i>
+                    </button>
+                    <div id="auth-nav-container" class="ms-1">
+                        <!-- Populated by JavaScript -->
                     </div>
-                </li>
-                {% endfor %}
-            </ul>
-
-            <div class="mt-4 text-center">
-                <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
             </div>
-            </li>
-        </form>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container my-4 flex-grow-1">
+
+        <!-- -------------------------------------------------------------
+             VIEW 1: QUIZ GENERATOR
+        -------------------------------------------------------------- -->
+        <section id="generator-view">
+            <!-- Hero Banner -->
+            <div class="hero-banner">
+                <div class="row align-items-center position-relative" style="z-index: 1;">
+                    <div class="col-lg-8">
+                        <span class="badge bg-white text-dark fw-bold px-3 py-2 mb-2 rounded-pill shadow-sm">
+                            <i class="fa-solid fa-bolt text-warning me-1"></i> Advanced General Knowledge Arena
+                        </span>
+                        <h1 class="display-6 fw-bold mb-2">Build Your Custom GK Challenge</h1>
+                        <p class="lead mb-0 text-white-50">
+                            Select your topic, difficulty, and question count. Test your knowledge with 3 hearts, 50-50 hints, streaks, and countdown timers!
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <div class="d-inline-flex flex-column align-items-lg-end gap-1">
+                            <div class="badge bg-dark bg-opacity-25 px-3 py-2 rounded-pill">
+                                <i class="fa-solid fa-heart text-danger me-1"></i> 3 Lives &bull; 2 Hints &bull; 1 Skip
+                            </div>
+                            <div class="badge bg-dark bg-opacity-25 px-3 py-2 rounded-pill">
+                                <i class="fa-solid fa-stopwatch text-warning me-1"></i> 30s Fast-Answer Bonus
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generator Configuration Card -->
+            <div class="glass-card mb-4">
+                <h4 class="mb-3 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-sliders text-primary"></i> 1. Choose GK Category
+                </h4>
+                <div id="categories-container" class="category-grid mb-4">
+                    <!-- Populated dynamically via JS -->
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <h4 class="mb-3 d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-gauge-high text-primary"></i> 2. Difficulty Level
+                        </h4>
+                        <div class="segmented-group" id="difficulty-group">
+                            <button type="button" class="segmented-btn selected" onclick="App.selectDifficulty('all', this)">Any Difficulty</button>
+                            <button type="button" class="segmented-btn" onclick="App.selectDifficulty('easy', this)">Easy (100)</button>
+                            <button type="button" class="segmented-btn" onclick="App.selectDifficulty('medium', this)">Medium (200)</button>
+                            <button type="button" class="segmented-btn" onclick="App.selectDifficulty('hard', this)">Hard (300)</button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h4 class="mb-3 d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-list-ol text-primary"></i> 3. Number of Questions
+                        </h4>
+                        <div class="segmented-group" id="count-group">
+                            <button type="button" class="segmented-btn" onclick="App.selectNumQuestions(5, this)">5 Questions</button>
+                            <button type="button" class="segmented-btn selected" onclick="App.selectNumQuestions(10, this)">10 Questions</button>
+                            <button type="button" class="segmented-btn" onclick="App.selectNumQuestions(15, this)">15 Questions</button>
+                            <button type="button" class="segmented-btn" onclick="App.selectNumQuestions(20, this)">20 Questions</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center pt-2">
+                    <button id="btn-start-quiz" class="btn btn-start-quiz px-5" onclick="App.startQuiz()">
+                        <i class="fa-solid fa-play me-2"></i> Launch Quiz Arena
+                    </button>
+                </div>
+            </div>
+
+            <!-- Features Info Grid -->
+            <div class="row g-3">
+                <div class="col-md-3 col-6">
+                    <div class="stat-box">
+                        <i class="fa-solid fa-wand-magic-sparkles fs-3 text-info mb-2"></i>
+                        <div class="h6 fw-bold mb-1">50:50 &amp; Hints</div>
+                        <div class="small text-muted">Eliminate 2 wrong choices or get a smart clue</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-box">
+                        <i class="fa-solid fa-fire-flame-curved fs-3 text-warning mb-2"></i>
+                        <div class="h6 fw-bold mb-1">Streak Bonuses</div>
+                        <div class="small text-muted">Consecutive right answers earn multiplier points</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-box">
+                        <i class="fa-solid fa-file-pdf fs-3 text-danger mb-2"></i>
+                        <div class="h6 fw-bold mb-1">PDF &amp; CSV Export</div>
+                        <div class="small text-muted">Download complete quiz performance breakdown</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-box">
+                        <i class="fa-solid fa-server fs-3 text-success mb-2"></i>
+                        <div class="h6 fw-bold mb-1">AWS &amp; RDS Ready</div>
+                        <div class="small text-muted">Configured for scalable cloud deployment</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- -------------------------------------------------------------
+             VIEW 2: ACTIVE QUIZ SCREEN
+        -------------------------------------------------------------- -->
+        <section id="quiz-view" style="display: none;">
+            <!-- Quiz HUD Bar -->
+            <div class="quiz-hud">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary px-3 py-2" id="hud-category">Science</span>
+                    <span class="badge bg-secondary text-uppercase px-2 py-2" id="hud-difficulty">MEDIUM</span>
+                    <span class="fw-semibold ms-2" id="hud-counter">Question 1 of 10</span>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="hud-stat">
+                        <span class="text-muted small">LIVES:</span>
+                        <div class="hearts-container" id="hud-hearts">
+                            <!-- 3 hearts rendered via JS -->
+                        </div>
+                    </div>
+                    <div id="hud-streak-container">
+                        <!-- Streak badge if streak > 1 -->
+                    </div>
+                    <div class="hud-stat">
+                        <span class="text-muted small">SCORE:</span>
+                        <span class="text-primary fs-5 fw-bold" id="hud-score">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer Bar -->
+            <div class="timer-wrapper">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small text-muted"><i class="fa-regular fa-clock me-1"></i> Time Remaining</span>
+                    <span class="small fw-bold" id="quiz-timer-seconds">30s</span>
+                </div>
+                <div class="timer-bar-container">
+                    <div class="timer-bar" id="quiz-timer-bar"></div>
+                </div>
+            </div>
+
+            <!-- Lifelines Row -->
+            <div class="lifelines-row">
+                <button class="btn-lifeline" id="btn-hint-5050" onclick="App.useHint5050()">
+                    <i class="fa-solid fa-circle-half-stroke text-warning"></i> 50:50 Hint 
+                    <span class="badge-count" id="count-hint-5050">1</span>
+                </button>
+                <button class="btn-lifeline" id="btn-hint-text" onclick="App.useHintText()">
+                    <i class="fa-solid fa-lightbulb text-info"></i> Text Hint 
+                    <span class="badge-count" id="count-hint-text">1</span>
+                </button>
+                <button class="btn-lifeline" id="btn-skip" onclick="App.skipQuestion()">
+                    <i class="fa-solid fa-forward-step text-secondary"></i> Skip Question 
+                    <span class="badge-count" id="count-skip">1</span>
+                </button>
+            </div>
+
+            <!-- Text Hint Box (Conditional) -->
+            <div id="hint-display-box" class="hint-box" style="display: none;"></div>
+
+            <!-- Main Question & Options Card -->
+            <div class="glass-card">
+                <!-- Question Illustration Image (Amazon S3) -->
+                <div id="quiz-question-image-container" class="text-center mb-3" style="display: none;">
+                    <img id="quiz-question-image" src="" alt="Question Illustration" class="img-fluid rounded-3 shadow-sm border border-secondary" style="max-height: 220px;">
+                </div>
+
+                <h3 class="question-title" id="quiz-question-text">
+                    Loading question...
+                </h3>
+
+                <!-- 4 Options Grid -->
+                <div class="options-grid" id="quiz-options-container">
+                    <!-- Rendered dynamically -->
+                </div>
+
+                <!-- Instant Feedback Overlay Card -->
+                <div id="quiz-feedback-box" class="feedback-card" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h4 class="mb-0 fw-bold" id="feedback-title">Correct!</h4>
+                        <span id="feedback-points-badge" class="badge bg-success">+150 Points</span>
+                    </div>
+                    <div id="feedback-explanation" class="mb-3"></div>
+                    <div class="text-end">
+                        <button id="btn-next-action" class="btn btn-primary px-4 fw-semibold">
+                            Next Question →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- -------------------------------------------------------------
+             VIEW 3: QUIZ RESULT SCREEN
+        -------------------------------------------------------------- -->
+        <section id="result-view" style="display: none;">
+            <div class="glass-card mb-4 text-center py-4">
+                <div class="mb-3">
+                    <span class="p-3 d-inline-block rounded-circle bg-primary bg-opacity-10 text-primary fs-1">
+                        🏆
+                    </span>
+                </div>
+                <h2 class="fw-bold mb-1" id="res-status-title">Quiz Completed!</h2>
+                <p class="text-muted mb-4">Here is your complete performance breakdown.</p>
+
+                <!-- Stats Grid -->
+                <div class="row g-3 mb-4 justify-content-center">
+                    <div class="col-md-2 col-4">
+                        <div class="stat-box">
+                            <div class="number" id="res-score">0</div>
+                            <div class="label">Total Score</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-4">
+                        <div class="stat-box">
+                            <div class="number text-success" id="res-accuracy">0%</div>
+                            <div class="label">Accuracy</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-4">
+                        <div class="stat-box">
+                            <div class="number text-info" id="res-time">0s</div>
+                            <div class="label">Time Taken</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-4">
+                        <div class="stat-box">
+                            <div class="number text-warning" id="res-streak">0x</div>
+                            <div class="label">Max Streak</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-4">
+                        <div class="stat-box">
+                            <div class="number text-danger" id="res-hearts">3 ❤️</div>
+                            <div class="label">Lives Left</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-4">
+                        <div class="stat-box">
+                            <div class="number text-secondary" id="res-hints">0</div>
+                            <div class="label">Hints Used</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action & Export Buttons -->
+                <div class="d-flex justify-content-center flex-wrap gap-2 mb-2">
+                    <button class="btn btn-primary px-4 fw-semibold" onclick="App.showView('generator')">
+                        <i class="fa-solid fa-rotate-right me-1"></i> Play Again
+                    </button>
+                    <button class="btn btn-outline-info px-4 fw-semibold" onclick="App.showView('leaderboard')">
+                        <i class="fa-solid fa-trophy me-1"></i> Leaderboard
+                    </button>
+                    <a id="btn-export-csv" href="#" class="btn btn-outline-success px-4 fw-semibold">
+                        <i class="fa-solid fa-file-csv me-1"></i> Export CSV
+                    </a>
+                    <a id="btn-export-pdf" href="#" target="_blank" class="btn btn-outline-danger px-4 fw-semibold">
+                        <i class="fa-solid fa-file-pdf me-1"></i> Export / Print PDF
+                    </a>
+                </div>
+            </div>
+
+            <!-- Detailed Question Review Section -->
+            <h4 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-list-check text-primary"></i> Question-by-Question Review
+            </h4>
+            <div id="result-review-list">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </section>
+
+        <!-- -------------------------------------------------------------
+             VIEW 4: LEADERBOARD SCREEN
+        -------------------------------------------------------------- -->
+        <section id="leaderboard-view" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1"><i class="fa-solid fa-trophy text-warning me-2"></i>Hall of Fame Leaderboard</h2>
+                    <p class="text-muted mb-0">Top 10 players based on high score, accuracy, and response speed</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 text-muted small fw-semibold">Category:</label>
+                    <select id="leaderboard-category-filter" class="form-select form-select-sm" style="min-width: 170px;" onchange="App.loadLeaderboard()">
+                        <option value="All">All Categories</option>
+                        <option value="History">History</option>
+                        <option value="Geography">Geography</option>
+                        <option value="Science">Science</option>
+                        <option value="Sports">Sports</option>
+                        <option value="Politics">Politics</option>
+                        <option value="Current Affairs">Current Affairs</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Technology">Technology</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>Score</th>
+                                <th>Accuracy</th>
+                                <th>Category</th>
+                                <th>Difficulty</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-tbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- -------------------------------------------------------------
+             VIEW 5: USER PROFILE & ATTEMPT HISTORY
+        -------------------------------------------------------------- -->
+        <section id="profile-view" style="display: none;">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-4">
+                    <div class="glass-card text-center">
+                        <div class="mb-3">
+                            <i class="fa-solid fa-circle-user text-primary" style="font-size: 4rem;"></i>
+                        </div>
+                        <h4 class="fw-bold mb-1" id="profile-username">User</h4>
+                        <p class="text-muted mb-2 small" id="profile-email">user@quizgen.io</p>
+                        <span class="badge bg-primary mb-3" id="profile-role">USER</span>
+
+                        <!-- Amazon SNS Email Notification Subscription -->
+                        <div class="p-3 bg-dark bg-opacity-25 rounded-3 text-start">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="small fw-bold"><i class="fa-solid fa-bell text-warning me-1"></i> Score Alerts (SNS)</span>
+                                <span id="sns-badge-status" class="badge bg-secondary">Not Subscribed</span>
+                            </div>
+                            <p class="text-muted small mb-2">Receive automated email alerts with your score, accuracy, and rank after every quiz via Amazon SNS.</p>
+                            <button id="btn-subscribe-sns" class="btn btn-outline-warning btn-sm w-100 fw-semibold" onclick="App.subscribeSns()">
+                                <i class="fa-solid fa-envelope-circle-check me-1"></i> Subscribe for Score Emails
+                            </button>
+                            <div id="sns-subscribe-alert" class="small mt-2 d-none"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="row g-3">
+                        <div class="col-sm-4">
+                            <div class="stat-box">
+                                <div class="number text-primary" id="user-stat-quizzes">0</div>
+                                <div class="label">Quizzes Completed</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="stat-box">
+                                <div class="number text-warning" id="user-stat-high-score">0</div>
+                                <div class="label">Highest Score</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="stat-box">
+                                <div class="number text-success" id="user-stat-avg-acc">0%</div>
+                                <div class="label">Average Accuracy</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="fw-bold mb-3"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>My Recent Attempts</h4>
+            <div class="glass-card">
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Difficulty</th>
+                                <th>Score</th>
+                                <th>Accuracy</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- -------------------------------------------------------------
+             VIEW 6: ADMIN QUESTION MANAGEMENT (CRUD)
+        -------------------------------------------------------------- -->
+        <section id="admin-view" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1"><i class="fa-solid fa-shield-halved text-warning me-2"></i>Admin Question Management</h2>
+                    <p class="text-muted mb-0">Create, edit, search, and manage General Knowledge quiz questions</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary fw-semibold" onclick="App.openAddQuestionModal()">
+                        <i class="fa-solid fa-plus me-1"></i> Add Question
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="glass-card mb-4 p-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                        <input type="text" id="admin-search-input" class="form-control" placeholder="Search questions..." oninput="App.loadAdminQuestions()">
+                    </div>
+                    <div class="col-md-4">
+                        <select id="admin-category-filter" class="form-select" onchange="App.loadAdminQuestions()">
+                            <option value="All">All Categories</option>
+                            <option value="History">History</option>
+                            <option value="Geography">Geography</option>
+                            <option value="Science">Science</option>
+                            <option value="Sports">Sports</option>
+                            <option value="Politics">Politics</option>
+                            <option value="Current Affairs">Current Affairs</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Technology">Technology</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <span class="badge bg-secondary px-3 py-2" id="admin-total-questions-badge">0 Questions</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions Table -->
+            <div class="glass-card">
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Category</th>
+                                <th>Difficulty</th>
+                                <th>Question</th>
+                                <th>Correct Answer</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-questions-tbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- -------------------------------------------------------------
+         MODALS: Auth, Game Over, Question Add/Edit
+    -------------------------------------------------------------- -->
+    <!-- Authentication Modal -->
+    <div class="modal fade" id="authModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <ul class="nav nav-pills w-100" id="authTab">
+                        <li class="nav-item flex-fill">
+                            <button class="nav-link active w-100 fw-bold" data-bs-toggle="pill" data-bs-target="#login-tab">Sign In</button>
+                        </li>
+                        <li class="nav-item flex-fill">
+                            <button class="nav-link w-100 fw-bold" data-bs-toggle="pill" data-bs-target="#register-tab">Register</button>
+                        </li>
+                    </ul>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="tab-content">
+                        <!-- Sign In Tab -->
+                        <div class="tab-pane fade show active" id="login-tab">
+                            <form onsubmit="App.handleLogin(event)">
+                                <div id="login-alert" class="alert alert-danger d-none py-2 small"></div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Username or Email</label>
+                                    <input type="text" name="username" class="form-control" required placeholder="admin or player1">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-semibold">Password</label>
+                                    <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Sign In</button>
+                                <div class="text-center mt-3 text-muted small">
+                                    Demo accounts: <code>admin / admin123</code> &bull; <code>player1 / player123</code>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Register Tab -->
+                        <div class="tab-pane fade" id="register-tab">
+                            <form onsubmit="App.handleRegister(event)">
+                                <div id="register-alert" class="alert alert-danger d-none py-2 small"></div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Username</label>
+                                    <input type="text" name="reg_username" class="form-control" required placeholder="Pick a username">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Email Address</label>
+                                    <input type="email" name="reg_email" class="form-control" required placeholder="you@domain.com">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-semibold">Password (min 6 chars)</label>
+                                    <input type="password" name="reg_password" class="form-control" required minlength="6" placeholder="••••••••">
+                                </div>
+                                <button type="submit" class="btn btn-success w-100 py-2 fw-bold">Create Account</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Game Over Modal -->
+    <div class="modal fade" id="gameOverModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center p-4">
+                <div class="mb-3">
+                    <i class="fa-solid fa-heart-crack text-danger" style="font-size: 4rem;"></i>
+                </div>
+                <h3 class="fw-bold text-danger mb-2">Game Over!</h3>
+                <p class="text-muted mb-4">You ran out of lives! Don't worry, practice makes perfect.</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-primary px-4 fw-semibold" data-bs-dismiss="modal" onclick="App.finishQuiz()">
+                        <i class="fa-solid fa-chart-simple me-1"></i> View Result Summary
+                    </button>
+                    <button class="btn btn-outline-secondary px-4 fw-semibold" data-bs-dismiss="modal" onclick="App.showView('generator')">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <script>
-        $(document).ready(function () {
-            $("input[type='checkbox']").change(function () {
-                // Toggle the selected-answer class when the checkbox changes
-                $(this).closest('li').toggleClass('selected-answer', this.checked);
+    <!-- Admin Add/Edit Question Modal -->
+    <div class="modal fade" id="questionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="question-modal-title">Add New Question</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="questionForm" onsubmit="App.handleQuestionSubmit(event)">
+                        <input type="hidden" id="edit-q-id">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Category</label>
+                                <select id="q-category" name="category" class="form-select" required>
+                                    <option value="History">History</option>
+                                    <option value="Geography">Geography</option>
+                                    <option value="Science">Science</option>
+                                    <option value="Sports">Sports</option>
+                                    <option value="Politics">Politics</option>
+                                    <option value="Current Affairs">Current Affairs</option>
+                                    <option value="Entertainment">Entertainment</option>
+                                    <option value="Technology">Technology</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Difficulty</label>
+                                <select id="q-difficulty" name="difficulty" class="form-select" required>
+                                    <option value="easy">Easy (100 pts)</option>
+                                    <option value="medium">Medium (200 pts)</option>
+                                    <option value="hard">Hard (300 pts)</option>
+                                </select>
+                            </div>
+                        </div>
 
-                // Find the closest question div to the changed checkbox
-                var questionDiv = $(this).closest('.question');
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Question</label>
+                            <textarea id="q-question" name="question" class="form-control" rows="2" required placeholder="Enter question text..."></textarea>
+                        </div>
 
-                // Get the question ID from the question div
-                var questionId = questionDiv.attr('id');
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Option A</label>
+                                <input type="text" id="q-option-a" name="option_a" class="form-control" required placeholder="Option A text">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Option B</label>
+                                <input type="text" id="q-option-b" name="option_b" class="form-control" required placeholder="Option B text">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Option C</label>
+                                <input type="text" id="q-option-c" name="option_c" class="form-control" required placeholder="Option C text">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Option D</label>
+                                <input type="text" id="q-option-d" name="option_d" class="form-control" required placeholder="Option D text">
+                            </div>
+                        </div>
 
-                // Find the hidden input field for firstModifiedField and lastModifiedField
-                var firstModifiedField = $("#first_modified_" + questionId);
-                var lastModifiedField = $("#last_modified_" + questionId);
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Correct Answer (Must match one of the 4 options above)</label>
+                            <input type="text" id="q-correct-answer" name="correct_answer" class="form-control" required placeholder="Exact match of correct option">
+                        </div>
 
-                // Check if the firstModifiedField is empty before updating
-                if (!firstModifiedField.val()) {
-                    // Update the first modified timestamp for this question
-                    var now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-                    firstModifiedField.val(now);
-                }
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">One-line Hint</label>
+                            <input type="text" id="q-hint" name="hint" class="form-control" placeholder="Helpful clue for user when text hint is activated">
+                        </div>
 
-                // Update the last modified timestamp for this question
-                var now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-                lastModifiedField.val(now);
-            });
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Explanation</label>
+                            <textarea id="q-explanation" name="explanation" class="form-control" rows="2" placeholder="Informative explanation shown in instant feedback &amp; review"></textarea>
+                        </div>
 
-            $("#submit-button").click(function () {
-                $("#quiz-form").submit();
-            });
-        });
-    </script>
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold"><i class="fa-brands fa-aws text-warning me-1"></i> Optional Illustration Image (Uploads to Amazon S3)</label>
+                            <input type="file" id="q-image-file" class="form-control mb-1" accept="image/*" onchange="App.handleImageUpload(event)">
+                            <input type="hidden" id="q-image-s3-key" name="image_s3_key">
+                            <div id="q-image-preview" class="small text-muted"></div>
+                        </div>
 
+                        <div class="text-end">
+                            <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4 fw-bold">Save Question</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5.3 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- App Logic -->
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ range(1000, 9999) | random }}"></script>
 </body>
-
 </html>

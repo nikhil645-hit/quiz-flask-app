@@ -1,3 +1,8 @@
-Flask
-PyMySQL
-datetime
+Flask>=3.0.0
+PyMySQL>=1.1.0
+python-dotenv>=1.0.0
+cryptography>=41.0.0
+gunicorn>=21.2.0
+boto3>=1.34.0
+watchtower>=3.0.0
+fpdf2>=2.7.0

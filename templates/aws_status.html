@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Cloud Architecture Status - QuizGen</title>
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5.3 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .aws-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--card-radius);
+            padding: 24px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .aws-card.healthy {
+            border-left: 6px solid var(--success);
+        }
+        .aws-card.fallback {
+            border-left: 6px solid var(--info);
+        }
+        .aws-card.unhealthy {
+            border-left: 6px solid var(--error);
+        }
+        .aws-icon-wrapper {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+        }
+        .pulse-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .pulse-healthy {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 1.5s infinite;
+        }
+        .pulse-fallback {
+            background: var(--info);
+            box-shadow: 0 0 10px var(--info);
+        }
+        .pulse-unhealthy {
+            background: var(--error);
+            box-shadow: 0 0 10px var(--error);
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header & Navigation -->
+    <nav class="navbar navbar-expand-lg custom-navbar">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <i class="fa-solid fa-brain-circuit text-primary fs-3"></i>
+                <span class="brand-logo-gradient">QuizGen.io</span>
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="/" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Back to App</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-4 flex-grow-1">
+        <!-- Hero Header -->
+        <div class="glass-card mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-warning text-dark fw-bold px-3 py-2 rounded-pill">
+                            <i class="fa-brands fa-aws me-1"></i> Amazon Web Services Integration
+                        </span>
+                        <span id="mode-badge" class="badge bg-info px-3 py-2 rounded-pill">
+                            Loading Mode...
+                        </span>
+                    </div>
+                    <h2 class="fw-bold mb-1">AWS Infrastructure &amp; Connectivity Status</h2>
+                    <p class="text-muted mb-0">Live connectivity diagnostic dashboard for Amazon RDS, S3, SNS, and CloudWatch</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary fw-semibold" id="btn-refresh" onclick="loadAwsStatus()">
+                        <i class="fa-solid fa-arrows-rotate me-1" id="refresh-icon"></i> Refresh Status
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Cards Grid -->
+        <div class="row g-4 mb-4" id="cards-container">
+            <!-- 1. Amazon RDS -->
+            <div class="col-md-6 col-lg-3">
+                <div class="aws-card" id="card-rds">
+                    <div class="aws-icon-wrapper bg-primary bg-opacity-10 text-primary">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="fw-bold mb-0">Amazon RDS</h5>
+                        <span class="badge bg-secondary" id="badge-rds">...</span>
+                    </div>
+                    <p class="small text-muted mb-2">Relational Database (MySQL)</p>
+                    <div class="small fw-semibold mb-2" id="details-rds">Checking...</div>
+                    <div class="small text-muted" id="endpoint-rds"></div>
+                </div>
+            </div>
+
+            <!-- 2. Amazon S3 -->
+            <div class="col-md-6 col-lg-3">
+                <div class="aws-card" id="card-s3">
+                    <div class="aws-icon-wrapper bg-success bg-opacity-10 text-success">
+                        <i class="fa-solid fa-bucket"></i>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="fw-bold mb-0">Amazon S3</h5>
+                        <span class="badge bg-secondary" id="badge-s3">...</span>
+                    </div>
+                    <p class="small text-muted mb-2">Results &amp; Image Storage</p>
+                    <div class="small fw-semibold mb-2" id="details-s3">Checking...</div>
+                    <div class="small text-muted" id="resource-s3"></div>
+                </div>
+            </div>
+
+            <!-- 3. Amazon SNS -->
+            <div class="col-md-6 col-lg-3">
+                <div class="aws-card" id="card-sns">
+                    <div class="aws-icon-wrapper bg-warning bg-opacity-10 text-warning">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="fw-bold mb-0">Amazon SNS</h5>
+                        <span class="badge bg-secondary" id="badge-sns">...</span>
+                    </div>
+                    <p class="small text-muted mb-2">Push &amp; Email Notifications</p>
+                    <div class="small fw-semibold mb-2" id="details-sns">Checking...</div>
+                    <div class="small text-muted" id="resource-sns"></div>
+                </div>
+            </div>
+
+            <!-- 4. Amazon CloudWatch -->
+            <div class="col-md-6 col-lg-3">
+                <div class="aws-card" id="card-cloudwatch">
+                    <div class="aws-icon-wrapper bg-info bg-opacity-10 text-info">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="fw-bold mb-0">CloudWatch</h5>
+                        <span class="badge bg-secondary" id="badge-cloudwatch">...</span>
+                    </div>
+                    <p class="small text-muted mb-2">Application Logs via Watchtower</p>
+                    <div class="small fw-semibold mb-2" id="details-cloudwatch">Checking...</div>
+                    <div class="small text-muted" id="resource-cloudwatch"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Architecture Summary Details -->
+        <div class="glass-card">
+            <h4 class="fw-bold mb-3"><i class="fa-solid fa-network-wired text-primary me-2"></i>Architecture Configuration</h4>
+            <div class="row g-3 small">
+                <div class="col-md-3">
+                    <div class="p-3 bg-dark bg-opacity-25 rounded-3">
+                        <span class="text-muted d-block mb-1">AWS Region</span>
+                        <strong class="fs-6" id="arch-region">us-east-1</strong>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 bg-dark bg-opacity-25 rounded-3">
+                        <span class="text-muted d-block mb-1">Execution Environment</span>
+                        <strong class="fs-6" id="arch-env">Local Dev (EC2 Ready)</strong>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 bg-dark bg-opacity-25 rounded-3">
+                        <span class="text-muted d-block mb-1">Authentication Provider</span>
+                        <strong class="fs-6">EC2 IAM Instance Profile</strong>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 bg-dark bg-opacity-25 rounded-3">
+                        <span class="text-muted d-block mb-1">S3 Pre-signed URL Expiry</span>
+                        <strong class="fs-6">15 Minutes (900 seconds)</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function loadAwsStatus() {
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('fa-spin');
+
+            try {
+                const res = await fetch('/api/aws/status');
+                const data = await res.json();
+
+                // Mode badge
+                const modeBadge = document.getElementById('mode-badge');
+                if (data.use_aws) {
+                    modeBadge.className = 'badge bg-success px-3 py-2 rounded-pill';
+                    modeBadge.innerHTML = '<i class="fa-solid fa-cloud me-1"></i> Live AWS Cloud Mode';
+                } else {
+                    modeBadge.className = 'badge bg-primary px-3 py-2 rounded-pill';
+                    modeBadge.innerHTML = '<i class="fa-solid fa-laptop-code me-1"></i> Local Fallback Mode';
+                }
+
+                document.getElementById('arch-region').textContent = data.region || 'us-east-1';
+
+                // Helper to update service card
+                function updateCard(key, service) {
+                    if (!service) return;
+                    const card = document.getElementById(`card-${key}`);
+                    const badge = document.getElementById(`badge-${key}`);
+                    const details = document.getElementById(`details-${key}`);
+                    const resource = document.getElementById(`resource-${key}`) || document.getElementById(`endpoint-${key}`);
+
+                    card.className = `aws-card ${service.status}`;
+                    let badgeClass = 'bg-secondary';
+                    let badgeText = service.status.toUpperCase();
+
+                    if (service.status === 'healthy') {
+                        badgeClass = 'bg-success';
+                        badgeText = service.latency_ms ? `${service.latency_ms} ms` : 'ACTIVE';
+                    } else if (service.status === 'fallback') {
+                        badgeClass = 'bg-info';
+                        badgeText = 'FALLBACK OK';
+                    } else if (service.status === 'unhealthy') {
+                        badgeClass = 'bg-danger';
+                        badgeText = 'ERROR';
+                    }
+
+                    badge.className = `badge ${badgeClass}`;
+                    badge.textContent = badgeText;
+                    details.textContent = service.details;
+                    if (resource) {
+                        resource.textContent = service.resource || service.endpoint || '';
+                    }
+                }
+
+                updateCard('rds', data.services.rds);
+                updateCard('s3', data.services.s3);
+                updateCard('sns', data.services.sns);
+                updateCard('cloudwatch', data.services.cloudwatch);
+
+            } catch (e) {
+                console.error('Error fetching AWS status:', e);
+            } finally {
+                setTimeout(() => icon.classList.remove('fa-spin'), 400);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadAwsStatus);
+    </script>
+</body>
+</html>

@@ -1,2 +1,6 @@
 Tutorial
 questions.json
+.env
+__pycache__/
+*.pyc
+uploads/
